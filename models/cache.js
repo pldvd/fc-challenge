@@ -12,7 +12,7 @@ const cacheSchema = new Schema({
   },
   ttl: {
     type: Number,
-    default: 86400 // 24 hours
+    default: Date.now() + 86400 // 24 hours from creation
   },
   createdAt: {
     type: Date,
