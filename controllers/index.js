@@ -21,7 +21,18 @@ exports.show_all = function (_, res) {
 }
 
 exports.delete_all = function (req, res) {
-  //define
+  Cache.deleteMany()
+  .then(deleted => {
+    if (deleted.ok === 1) {
+      res.status(200).send('Cache has been deleted');
+      return;
+    }
+    if (deleted.n !== deleted.deletedCount) {
+      res.status(400).send('The request could not be fully completed');
+      return;
+    }
+  })
+  .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
 }
 
 exports.show_selected = function (req, res) {
