@@ -10,10 +10,14 @@ function randomString(length) {
   return result;
 }
 
+function checkTTL(entry) {
+  entry.ttl < Date.now(); //return true if TTL is expired
+}
+
 exports.show_all = function (_, res) {
   Cache.find()
     .then(keys => {
-      return keys.length > 0 ? res.status(200).send(keys) : res.status(204).send('No keys are available')
+      return keys.length > 0 ? res.status(200).send(keys) : res.status(204).send('No keys match the query')
     })
     .catch(err => {
       res.status(400).send(`The following error occured: ${err.message}`)
@@ -22,17 +26,17 @@ exports.show_all = function (_, res) {
 
 exports.delete_all = function (req, res) {
   Cache.deleteMany()
-  .then(deleted => {
-    if (deleted.ok === 1) {
-      res.status(200).send('Cache has been deleted');
-      return;
-    }
-    if (deleted.n !== deleted.deletedCount) {
-      res.status(400).send('The request could not be fully completed');
-      return;
-    }
-  })
-  .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
+    .then(deleted => {
+      if (deleted.ok === 1) {
+        res.status(200).send('Cache has been deleted');
+        return;
+      }
+      if (deleted.n !== deleted.deletedCount) {
+        res.status(400).send('The request could not be fully completed');
+        return;
+      }
+    })
+    .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
 }
 
 exports.show_selected = function (req, res) {
@@ -40,7 +44,7 @@ exports.show_selected = function (req, res) {
     key: req.params.key
   })
     .then(cacheEntry => {
-      if (cacheEntry.length === 0) {
+      if (cacheEntry.length === 0 || checkTTL(cacheEntry)) {
         console.log('Cache miss');
         const newEntry = new Cache({
           key: randomString(8),
@@ -53,18 +57,22 @@ exports.show_selected = function (req, res) {
             return;
           })
           .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
-
       }
 
       console.log('Cache hit');
-      res.status(200).send(cacheEntry);
+
+      Cache.findOneAndUpdate({ key: req.params.key }, { ttl: Date.now() + 86400 })
+        .then(updatedEntry => res.status(200).send(updatedEntry));
+        /*here I am updating the TTL after finding the entry, the entry should exist 
+        otherwise the execution should not arrive here, so we can be certain that there is and updatedEntry coming 
+        back and getting a 404 should not be a possibility*/
     })
     .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
 }
 
 exports.update_selected = function (req, res) {
 
-  const newValues = Object.assign(req.body, { updatedAt: Date.now(), ttl: Date.now() +  86400 })
+  const newValues = Object.assign(req.body, { updatedAt: Date.now(), ttl: Date.now() + 86400 })
 
   Cache.findOneAndUpdate({ key: req.params.key }, newValues)
     .then(cacheEntry => {
