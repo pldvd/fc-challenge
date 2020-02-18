@@ -36,13 +36,17 @@ exports.show_selected = function (req, res) {
           data: randomString(50)
         })
 
-        return newEntry.save()
-          .then(_ => res.status(201).send(newEntry.data))
-          .catch(err => res.status(400).send(`The following error occured: ${err.message}`))
+        newEntry.save()
+          .then(_ => {
+            res.status(201).send(newEntry.data);
+            return;
+          })
+          .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
+
       }
 
       console.log('Cache hit');
-      return res.status(200).send(cacheEntry);
+      res.status(200).send(cacheEntry);
     })
     .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
 }
@@ -52,5 +56,15 @@ exports.update_selected = function (req, res) {
 }
 
 exports.delete_selected = function (req, res) {
-  //define
+  Cache.findOneAndDelete({
+    key: req.params.key
+  })
+    .then(deletedItem => {
+      if (deletedItem) {
+        res.status(200).send(`Item with key ${req.params.key} deleted`);
+        return;
+      }
+      res.status(404).send('Item not found');
+    })
+    .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
 }
