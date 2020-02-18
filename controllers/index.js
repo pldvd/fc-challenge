@@ -64,7 +64,7 @@ exports.show_selected = function (req, res) {
 
 exports.update_selected = function (req, res) {
 
-  const newValues = Object.assign(req.body, { updatedAt: Date.now() })
+  const newValues = Object.assign(req.body, { updatedAt: Date.now(), ttl: Date.now() +  86400 })
 
   Cache.findOneAndUpdate({ key: req.params.key }, newValues)
     .then(cacheEntry => {
