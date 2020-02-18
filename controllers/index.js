@@ -52,8 +52,20 @@ exports.show_selected = function (req, res) {
 }
 
 exports.update_selected = function (req, res) {
-  //define
+
+  const newValues = Object.assign(req.body, { updatedAt: Date.now() })
+
+  Cache.findOneAndUpdate({ key: req.params.key }, newValues)
+    .then(cacheEntry => {
+      if (cacheEntry) {
+        res.status(200).send(`Item with key ${req.params.key} was updated`);
+        return;
+      }
+      res.status(404).send(`Item with key ${req.params.key} was not found`);
+    })
+    .catch(err => res.status(400).send(`The following error occured: ${err.message}`));
 }
+
 
 exports.delete_selected = function (req, res) {
   Cache.findOneAndDelete({
